@@ -1,0 +1,156 @@
+var mines;
+var minefield;
+var colors = ["#0100fe","#017f01","#fe0000","#010080","#810102","#008081","#000000","#808080"];
+
+function placeMines(x,y,n){
+	mines = new Array(x);
+	max = n;
+	minefield = new Array(x);
+	for(var i = 0; i < x; i++){
+		mines[i] = new Array(y);
+		minefield[i] = new Array(y);
+		for(var j = 0; j < y; j++){
+			if(Math.random() > (1 - (max/(x*y))) && n>0){
+				mines[i][j] = -1;
+				n--;
+			}else{
+				if(mines[i][j] == null) mines[i][j] = 0;
+			}
+		}		
+    }
+	while(n>0){
+		for(var i = 0; i < x; i++){
+			for(var j = 0; j < y; j++){
+				if(Math.random() > (1 - (max/(x*y))) && n>0 && mines[i][j] == 0){
+					mines[i][j] = -1;
+					n--;
+				}
+			}		
+		}
+	}
+	for(var i = 0; i < x; i++){
+        for(var j = 0; j < y; j++){
+			if(mines[i][j] == -1){
+				if(i>0 && mines[i-1][j]>-1) mines[i-1][j]++;
+				if(i>0 && j>0 && mines[i-1][j-1]>-1) mines[i-1][j-1]++;
+				if(i>0 && j<y-1 && mines[i-1][j+1]>-1) mines[i-1][j+1]++;
+				if(j>0 && mines[i][j-1]>-1) mines[i][j-1]++;
+				if(j<y-1 && mines[i][j+1]>-1) mines[i][j+1]++;
+				if(i<x-1 && mines[i+1][j]>-1) mines[i+1][j]++;
+				if(i<x-1 && j>0 && mines[i+1][j-1]>-1) mines[i+1][j-1]++;
+				if(i<x-1 && j<y-1 && mines[i+1][j+1]>-1) mines[i+1][j+1]++;
+			}
+        }
+    }
+}
+
+function createMinefield(x,y,n){
+	var parent = $("#minefield");
+	
+	placeMines(x,y,n);
+	tbl  = document.createElement('table');
+	for(var i = 0; i < x; i++){
+        var tr = tbl.insertRow(-1);
+        for(var j = 0; j < y; j++){
+            minefield[i][j] = $(tr.insertCell(-1));
+			minefield[i][j].addClass("hiddenCell");
+			minefield[i][j].attr('data-x', i);
+			minefield[i][j].attr('data-y', j);
+        }
+    }
+    parent.append(tbl);
+	parent.css('width',parent.find('table').css('width'));
+}
+
+function clickCell(jCell){
+	if(jCell.hasClass("hiddenCell")){
+		result = mines[jCell.data('x')][jCell.data('y')];
+		switch(result) {
+		case 0:
+			explore(jCell);
+			break;
+		case -1:
+			endGame(jCell);
+			break;
+		default	:
+			showCell(jCell,result);
+		}
+		showCell(jCell,result);
+	}
+}
+
+function explore(jCell){
+	if(jCell.hasClass("hiddenCell")){
+		showCell(jCell,0);
+		var i = jCell.data('x');
+		var j = jCell.data('y');
+		var x = minefield.length;
+		var y = minefield[0].length;
+		if(i>0 && mines[i-1][j]>-1 && minefield[i-1][j].hasClass("hiddenCell")) mines[i-1][j] == 0 ? explore(minefield[i-1][j]) : showCell(minefield[i-1][j],1);
+		if(i>0 && j>0 && mines[i-1][j-1]>-1 && minefield[i-1][j-1].hasClass("hiddenCell")) mines[i-1][j-1] == 0 ? explore(minefield[i-1][j-1]) : showCell(minefield[i-1][j-1],1);
+		if(i>0 && j<y-1 && mines[i-1][j+1]>-1 && minefield[i-1][j+1].hasClass("hiddenCell")) mines[i-1][j+1] == 0 ? explore(minefield[i-1][j+1]) : showCell(minefield[i-1][j+1],1);
+		if(j>0 && mines[i][j-1]>-1 && minefield[i][j-1].hasClass("hiddenCell")) mines[i][j-1] == 0 ? explore(minefield[i][j-1]) : showCell(minefield[i][j-1],1);
+		if(j<y-1 && mines[i][j+1]>-1 && minefield[i][j+1].hasClass("hiddenCell")) mines[i][j+1] == 0 ? explore(minefield[i][j+1]) : showCell(minefield[i][j+1],1);
+		if(i<x-1 && mines[i+1][j]>-1 && minefield[i+1][j].hasClass("hiddenCell")) mines[i+1][j] == 0 ? explore(minefield[i+1][j]) : showCell(minefield[i+1][j],1);
+		if(i<x-1 && j>0 && mines[i+1][j-1]>-1 && minefield[i+1][j-1].hasClass("hiddenCell")) mines[i+1][j-1] == 0 ? explore(minefield[i+1][j-1]) : showCell(minefield[i+1][j-1],1);
+		if(i<x-1 && j<y-1 && mines[i+1][j+1]>-1 && minefield[i+1][j+1].hasClass("hiddenCell")) mines[i+1][j+1] == 0 ? explore(minefield[i+1][j+1]) : showCell(minefield[i+1][j+1],1);	
+	}
+}
+function restart(){
+	$('.gameover').remove();
+	$('#minefield').find('table').remove();
+	createMinefield(10,10,20);
+}
+
+function endGame(jCell){
+	jCell.removeClass("hiddenCell");
+	jCell.addClass("explodedMineCell");
+	showAll();
+	$("#minefield").prepend("<div class='gameover'> Gameover! </div>");
+	$(".gameover").slideDown();
+	
+}
+
+function showAll(){
+	var x = minefield.length;
+	var y = minefield[0].length;
+	for(var i = 0; i<x; i++){
+		for(var j = 0; j<y; j++){
+			showCell(minefield[i][j],mines[minefield[i][j].data('x')][minefield[i][j].data('y')]);
+		}
+	}
+}
+
+function showCell(jCell, result){
+	if(jCell.hasClass("hiddenCell")){
+		jCell.removeClass("hiddenCell");
+		switch(result) {
+		case 0:
+			jCell.addClass("blankCell");
+			break;
+		case -1:
+			jCell.addClass("mineCell");
+			break;
+		default	:
+			jCell.addClass("numberCell");
+			jCell.css("color",colors[(result-1)]);
+			jCell.text(result);
+		}
+	}
+}
+
+
+
+minesweeper = function(){
+createMinefield(10,10,20);
+
+$("#minefield").find("td").on("mouseenter", function(){
+	$(this).toggleClass("highlighted");
+}).on("mouseleave",function(){
+	$(this).toggleClass("highlighted");
+}).on("click",function(){
+	clickCell($(this));
+});
+};
+
+
